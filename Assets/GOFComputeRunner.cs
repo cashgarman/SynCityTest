@@ -42,14 +42,14 @@ public class GOFComputeRunner : MonoBehaviour
 
         numNodesText.text = $"Cells: {width * height:n0}";
 
-        // Create the textures that will contain the current and next generation of the game
+        // Create the textures that will contain the current generation of the game
         currentGen = new Texture2D(width, height, TextureFormat.RGBA32, false);
 
-        // Create the render texture that will display the game
+        // Create the render texture that contain the next generation of the game
         nextGen = new RenderTexture(width, height, 24) {enableRandomWrite = true};
         nextGen.Create();
 
-        // Make sure the game texture gets displayed
+        // Make sure the current generation of game always gets displayed
         targetImage.texture = currentGen;
 
         // Setup the compute shader
@@ -64,13 +64,6 @@ public class GOFComputeRunner : MonoBehaviour
         
         // Use the initial zoom
         transform.localScale = zoom * Vector3.one * zoomSensivity;
-    }
-
-    private static void CopyTexture(RenderTexture source, Texture2D dest)
-    {
-         RenderTexture.active = source;
-         dest.ReadPixels(new Rect(0, 0, source.width, source.height), 0, 0);
-         dest.Apply();
     }
 
     void Update()
@@ -125,6 +118,7 @@ public class GOFComputeRunner : MonoBehaviour
         // Randomize the cells
         var randomizeKernel = computerShader.FindKernel("Randomize");
 
+        // Run the randomize compute shader
         computerShader.SetTexture(randomizeKernel, "NextGen", nextGen);
         computerShader.SetInt("Seed", seed);
         computerShader.SetFloat("Threshold", threshold);
@@ -137,13 +131,14 @@ public class GOFComputeRunner : MonoBehaviour
 
     private void SimulateGeneration()
     {
-        // Simulate the game of life
+        // Simulate the game of life!
         computerShader.GetKernelThreadGroupSizes(kernel, out var x, out var y, out var z);
         computerShader.Dispatch(kernel, Mathf.CeilToInt(width / (float)x), Mathf.CeilToInt(height / (float)y), 1);
         
         // Make the next generation the new current generation
         Graphics.CopyTexture(nextGen, currentGen);
 
+        // Update the FPS display
         FPSText.text = $"FPS: {1f / Time.smoothDeltaTime:F0}";
     }
 }
