@@ -1,0 +1,72 @@
+﻿#pragma kernel Simulate
+#pragma kernel Randomize
+
+Texture2D<float4> CurrentGen;
+RWTexture2D<float4> NextGen;
+
+int Width;
+int Height;
+float Threshold;
+uint Seed;
+
+inline bool IsAlive(int2 coord)
+{
+    return (any(coord < 0) || (Width <= coord.x) || (Height <= coord.y)) ? false : CurrentGen[coord.xy].y > 0.15;
+}
+
+[numthreads(32, 32, 1)]
+void Simulate(uint3 id : SV_DispatchThreadID)
+{
+	int2 coord = id.xy;
+	if((coord.x < Width) && (coord.y < Height))
+	{
+		bool neighbour0  = IsAlive(id.xy + int2(-1,-1));
+		bool neighbour1  = IsAlive(id.xy + int2( 0,-1));
+		bool neighbour2  = IsAlive(id.xy + int2( 1,-1));
+		bool neighbour3  = IsAlive(id.xy + int2(-1, 0));
+		bool neighbour4  = IsAlive(id.xy + int2( 1, 0));
+		bool neighbour5  = IsAlive(id.xy + int2(-1, 1));
+		bool neighbour6  = IsAlive(id.xy + int2( 0, 1));
+		bool neighbour7  = IsAlive(id.xy + int2( 1, 1));
+
+        int numAlive = neighbour0 + neighbour1 + neighbour2 + neighbour3 + neighbour4 + neighbour5 + neighbour6 + neighbour7;
+
+        if((IsAlive(coord) && numAlive == 2) || numAlive == 3)
+        {
+            NextGen[coord] = float4(0,1,0,1);
+        }
+        else
+        {
+            NextGen[coord] = float4(0,0.15,0,1);
+        }
+	}
+}
+
+uint Hash(uint s)
+{
+    s ^= 2747636419u;
+    s *= 2654435769u;
+    s ^= s >> 16;
+    s *= 2654435769u;
+    s ^= s >> 16;
+    s *= 2654435769u;
+    return s;
+}
+
+float Random(uint seed)
+{
+    return float(Hash(seed)) / 4294967295.0; // 2^32-1
+}
+
+[numthreads(32,32,1)]
+void Randomize(uint3 id : SV_DispatchThreadID)
+{
+    if(Random(id.x * id.y * Seed) > Threshold)
+    {
+        NextGen[id.xy] = float4(0,1,0,1);
+    }
+    else
+    {
+        NextGen[id.xy] = float4(0,0,0,1);
+    }
+}
