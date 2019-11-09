@@ -1,8 +1,10 @@
-﻿using TMPro;
+﻿using System;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using Debug = UnityEngine.Debug;
+using Random = UnityEngine.Random;
 
 public class GOFComputeRunner : MonoBehaviour
 {
@@ -31,12 +33,11 @@ public class GOFComputeRunner : MonoBehaviour
         // Randomize the world
         seed = Random.Range(0, 1337);
 
-        resolutionMultiplier = PlayerPrefs.GetInt("Resolution");
+        resolutionMultiplier = Math.Max(1, PlayerPrefs.GetInt("Resolution"));
         resolutionText.text = $"Resolution: x{resolutionMultiplier}";
         
         width = Screen.width * resolutionMultiplier;
         height = Screen.height * resolutionMultiplier;
-
         Debug.Log($"width: {width} height: {height}");
         Debug.Log($"total cells: {width * height}");
 
